@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+omniscan.db
+var/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+node_modules/
+dashboard/dist/

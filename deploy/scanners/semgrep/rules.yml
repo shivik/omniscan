@@ -1,0 +1,50 @@
+# Offline ruleset for the OmniScan semgrep adapter.
+#
+# SAST runs with NO network (AGENT.md §2.3 / SKILLS.md §2), so we cannot fetch the
+# semgrep registry at scan time. This curated, vendored ruleset is mounted read-only
+# into the container and pinned alongside the scanner image. Extend it deliberately;
+# do not switch the adapter to `--config auto`, which requires network egress.
+rules:
+  - id: omniscan.python.eval-call
+    languages: [python]
+    severity: ERROR
+    message: Use of eval() on a dynamic value can lead to code injection.
+    metadata:
+      cwe: "CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code"
+    pattern: eval(...)
+
+  - id: omniscan.python.subprocess-shell-true
+    languages: [python]
+    severity: ERROR
+    message: subprocess called with shell=True can enable shell/command injection.
+    metadata:
+      cwe: "CWE-78: OS Command Injection"
+    patterns:
+      - pattern: subprocess.$FN(..., shell=True, ...)
+
+  - id: omniscan.python.insecure-deserialization
+    languages: [python]
+    severity: ERROR
+    message: Insecure deserialization via pickle can execute arbitrary code.
+    metadata:
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+    patterns:
+      - pattern-either:
+          - pattern: pickle.loads(...)
+          - pattern: pickle.load(...)
+
+  - id: omniscan.python.weak-hash-md5
+    languages: [python]
+    severity: WARNING
+    message: MD5 is cryptographically weak; use SHA-256 or stronger.
+    metadata:
+      cwe: "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+    pattern: hashlib.md5(...)
+
+  - id: omniscan.python.tls-verify-disabled
+    languages: [python]
+    severity: ERROR
+    message: TLS certificate verification is disabled (verify=False).
+    metadata:
+      cwe: "CWE-295: Improper Certificate Validation"
+    pattern: requests.$FN(..., verify=False, ...)

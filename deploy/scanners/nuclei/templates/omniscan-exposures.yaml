@@ -1,0 +1,31 @@
+id: omniscan-exposed-secret-marker
+
+info:
+  name: Exposed secret marker in HTTP response
+  author: omniscan
+  severity: high
+  description: >
+    Detects an application exposing a secret-shaped marker in an HTTP response
+    body (e.g. a leaked token, dotenv contents, or debug dump). Part of the
+    OmniScan vendored, offline DAST ruleset — extend deliberately; do NOT switch
+    the adapter to remote template fetch (that would broaden egress beyond the
+    authorized target).
+  tags: [exposure, omniscan]
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+      - "{{BaseURL}}/.env"
+    stop-at-first-match: true
+    matchers-condition: or
+    matchers:
+      - type: word
+        part: body
+        words:
+          - "OMNISCAN_EXPOSED_SECRET"
+      - type: regex
+        part: body
+        regex:
+          - "AKIA[0-9A-Z]{16}"
+          - "ghp_[A-Za-z0-9]{20,}"

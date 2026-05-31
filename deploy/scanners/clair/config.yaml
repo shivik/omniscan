@@ -1,0 +1,9 @@
+# clairctl client config — mounted read-only into the OmniScan `clair` adapter container
+# at /etc/clairctl/config.yaml. Points the client at the Clair host (see docker-compose.yml).
+# The host can be overridden at scan time via options.clair_host / OMNISCAN_CLAIR_URL.
+clairctl:
+  # Clair v4 HTTP API endpoint (indexer + matcher in combo mode).
+  host: "${CLAIR_API}"
+  # sortby: severity
+# Registry pull credentials are injected by the runner from a secret reference
+# (CLAIRCTL_REGISTRY_AUTH) — never stored here in plaintext.

@@ -1,0 +1,38 @@
+# Clair v4 — open-source container-image vulnerability engine (Quay/Red Hat).
+#
+# Brings up Clair in single-process ("combo") mode + its Postgres. On first start the
+# matcher's updaters pull advisory feeds (this takes a while and several GB). Once healthy,
+# the OmniScan `clair` adapter's clairctl client talks to it at http://localhost:6060.
+#
+#   docker compose -f deploy/scanners/clair/docker-compose.yml up -d
+#   # then point the adapter at it:  export OMNISCAN_CLAIR_URL=http://host.docker.internal:6060
+#
+# This is provisioning the user runs deliberately — it is NOT started by the test suite.
+services:
+  clair-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: clair
+      POSTGRES_PASSWORD: clair
+      POSTGRES_DB: clair
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clair"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    ports:
+      - "5433:5432"
+
+  clair:
+    image: quay.io/projectquay/clair:4.8.0
+    depends_on:
+      clair-db:
+        condition: service_healthy
+    environment:
+      CLAIR_MODE: combo
+      CLAIR_CONF: /etc/clair/config.yaml
+    volumes:
+      - ./clair-config.yaml:/etc/clair/config.yaml:ro
+    ports:
+      - "6060:6060"   # HTTP API (indexer + matcher in combo mode)
+      - "8089:8089"   # introspection / metrics

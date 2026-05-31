@@ -1,0 +1,289 @@
+{
+  "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/os/schemas/sarif-schema-2.1.0.json",
+  "runs": [
+    {
+      "invocations": [
+        {
+          "executionSuccessful": true,
+          "toolExecutionNotifications": []
+        }
+      ],
+      "results": [
+        {
+          "fingerprints": {
+            "matchBasedId/v1": "9f691aaac3e0350adb7625d918dedb87c8015ee647ecf6965f1bec4a8991b54308a4886d1077d0510aa844a4e9393ccd38e67e9eafb8ac61fd1467391d5e25d0_0"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/src/app.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "endColumn": 36,
+                  "endLine": 3,
+                  "snippet": {
+                    "text": "    subprocess.run(cmd, shell=True)"
+                  },
+                  "startColumn": 5,
+                  "startLine": 3
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "subprocess called with shell=True can enable shell/command injection."
+          },
+          "properties": {},
+          "ruleId": "omniscan.python.subprocess-shell-true"
+        },
+        {
+          "fingerprints": {
+            "matchBasedId/v1": "fe94821b7403cc4aa5fa077ab3e8f512956dd06d900ca92aaa59b6b6fdd7de991316d53fcfc46448fc8505028f0f55b4eeb49ced04928fa61f400d3ca1de9574_0"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/src/app.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "endColumn": 29,
+                  "endLine": 4,
+                  "snippet": {
+                    "text": "    obj = pickle.loads(blob)"
+                  },
+                  "startColumn": 11,
+                  "startLine": 4
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Insecure deserialization via pickle can execute arbitrary code."
+          },
+          "properties": {},
+          "ruleId": "omniscan.python.insecure-deserialization"
+        },
+        {
+          "fingerprints": {
+            "matchBasedId/v1": "8b7e28e1445ac42351ac22f365b18173978dae905a6c357434071d9ea433e9fc2b2f170185a3aae1a90c2de3400f85abf47ecc0b3978f90afffcd9de05318db3_0"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/src/app.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "endColumn": 23,
+                  "endLine": 5,
+                  "snippet": {
+                    "text": "    h = hashlib.md5(x)"
+                  },
+                  "startColumn": 9,
+                  "startLine": 5
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "MD5 is cryptographically weak; use SHA-256 or stronger."
+          },
+          "properties": {},
+          "ruleId": "omniscan.python.weak-hash-md5"
+        },
+        {
+          "fingerprints": {
+            "matchBasedId/v1": "5c2dde9978379fc7e5cbd8e26cad747f5e8a1c4fb63436cae8449571fbf2c18a10d3556eb204736026e67ca0acb7335fd345640b2ef4998d99b29a8dce155127_0"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/src/app.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "endColumn": 12,
+                  "endLine": 6,
+                  "snippet": {
+                    "text": "    eval(x)"
+                  },
+                  "startColumn": 5,
+                  "startLine": 6
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Use of eval() on a dynamic value can lead to code injection."
+          },
+          "properties": {},
+          "ruleId": "omniscan.python.eval-call"
+        },
+        {
+          "fingerprints": {
+            "matchBasedId/v1": "e38a9ed8b76585d8e21fd03406e280def2b917b13717771316d1094c904874f7b4edce1d57a724b89afd017601c8dfd42e1eb46be1997181f2813384b2d6ef3f_0"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/src/app.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "endColumn": 36,
+                  "endLine": 7,
+                  "snippet": {
+                    "text": "    requests.get(url, verify=False)"
+                  },
+                  "startColumn": 5,
+                  "startLine": 7
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "TLS certificate verification is disabled (verify=False)."
+          },
+          "properties": {},
+          "ruleId": "omniscan.python.tls-verify-disabled"
+        }
+      ],
+      "tool": {
+        "driver": {
+          "name": "Semgrep OSS",
+          "rules": [
+            {
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "fullDescription": {
+                "text": "Insecure deserialization via pickle can execute arbitrary code."
+              },
+              "help": {
+                "markdown": "Insecure deserialization via pickle can execute arbitrary code.",
+                "text": "Insecure deserialization via pickle can execute arbitrary code."
+              },
+              "id": "omniscan.python.insecure-deserialization",
+              "name": "omniscan.python.insecure-deserialization",
+              "properties": {
+                "precision": "very-high",
+                "tags": [
+                  "CWE-502: Deserialization of Untrusted Data",
+                  "security"
+                ]
+              },
+              "shortDescription": {
+                "text": "Semgrep Finding: omniscan.python.insecure-deserialization"
+              }
+            },
+            {
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "fullDescription": {
+                "text": "subprocess called with shell=True can enable shell/command injection."
+              },
+              "help": {
+                "markdown": "subprocess called with shell=True can enable shell/command injection.",
+                "text": "subprocess called with shell=True can enable shell/command injection."
+              },
+              "id": "omniscan.python.subprocess-shell-true",
+              "name": "omniscan.python.subprocess-shell-true",
+              "properties": {
+                "precision": "very-high",
+                "tags": [
+                  "CWE-78: OS Command Injection",
+                  "security"
+                ]
+              },
+              "shortDescription": {
+                "text": "Semgrep Finding: omniscan.python.subprocess-shell-true"
+              }
+            },
+            {
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "fullDescription": {
+                "text": "TLS certificate verification is disabled (verify=False)."
+              },
+              "help": {
+                "markdown": "TLS certificate verification is disabled (verify=False).",
+                "text": "TLS certificate verification is disabled (verify=False)."
+              },
+              "id": "omniscan.python.tls-verify-disabled",
+              "name": "omniscan.python.tls-verify-disabled",
+              "properties": {
+                "precision": "very-high",
+                "tags": [
+                  "CWE-295: Improper Certificate Validation",
+                  "security"
+                ]
+              },
+              "shortDescription": {
+                "text": "Semgrep Finding: omniscan.python.tls-verify-disabled"
+              }
+            },
+            {
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "fullDescription": {
+                "text": "Use of eval() on a dynamic value can lead to code injection."
+              },
+              "help": {
+                "markdown": "Use of eval() on a dynamic value can lead to code injection.",
+                "text": "Use of eval() on a dynamic value can lead to code injection."
+              },
+              "id": "omniscan.python.eval-call",
+              "name": "omniscan.python.eval-call",
+              "properties": {
+                "precision": "very-high",
+                "tags": [
+                  "CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code",
+                  "security"
+                ]
+              },
+              "shortDescription": {
+                "text": "Semgrep Finding: omniscan.python.eval-call"
+              }
+            },
+            {
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "fullDescription": {
+                "text": "MD5 is cryptographically weak; use SHA-256 or stronger."
+              },
+              "help": {
+                "markdown": "MD5 is cryptographically weak; use SHA-256 or stronger.",
+                "text": "MD5 is cryptographically weak; use SHA-256 or stronger."
+              },
+              "id": "omniscan.python.weak-hash-md5",
+              "name": "omniscan.python.weak-hash-md5",
+              "properties": {
+                "precision": "very-high",
+                "tags": [
+                  "CWE-327: Use of a Broken or Risky Cryptographic Algorithm",
+                  "security"
+                ]
+              },
+              "shortDescription": {
+                "text": "Semgrep Finding: omniscan.python.weak-hash-md5"
+              }
+            }
+          ],
+          "semanticVersion": "1.97.0"
+        }
+      }
+    }
+  ],
+  "version": "2.1.0"
+}

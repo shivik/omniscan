@@ -1,0 +1,120 @@
+:root {
+  --bg: #0d1117;
+  --panel: #161b22;
+  --panel-2: #1c2330;
+  --border: #2a3340;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #2f81f7;
+  --critical: #f85149;
+  --high: #ff7b72;
+  --medium: #d29922;
+  --low: #3fb950;
+  --info: #6e7681;
+  --embargo: #bc8cff;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.app { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: 220px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sidebar h1 { font-size: 18px; margin: 0 0 16px; letter-spacing: 0.5px; }
+.sidebar .brand-rvd { color: var(--embargo); font-size: 11px; display: block; margin-top: -12px; margin-bottom: 16px; }
+.nav-link { padding: 8px 10px; border-radius: 6px; color: var(--text); }
+.nav-link:hover { background: var(--panel-2); text-decoration: none; }
+.nav-link.active { background: var(--accent); color: white; }
+.sidebar .spacer { flex: 1; }
+.sidebar .session { font-size: 12px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 12px; }
+
+.main { flex: 1; padding: 24px 32px; overflow: auto; max-width: 1400px; }
+.main h2 { margin-top: 0; }
+
+.toolbar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+.toolbar input, .toolbar select, input, select, textarea {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+textarea { width: 100%; resize: vertical; font-family: inherit; }
+
+button {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+button.secondary { background: var(--panel-2); border: 1px solid var(--border); color: var(--text); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); }
+th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; }
+tbody tr:hover { background: var(--panel); cursor: pointer; }
+
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+.card h3 { margin-top: 0; }
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.sev-critical { background: rgba(248,81,73,0.18); color: var(--critical); }
+.sev-high { background: rgba(255,123,114,0.16); color: var(--high); }
+.sev-medium { background: rgba(210,153,34,0.16); color: var(--medium); }
+.sev-low { background: rgba(63,185,80,0.16); color: var(--low); }
+.sev-info { background: rgba(110,118,129,0.2); color: var(--info); }
+
+.status { background: var(--panel-2); border: 1px solid var(--border); color: var(--muted); }
+.status-embargoed { background: rgba(188,140,255,0.16); color: var(--embargo); border-color: transparent; }
+.status-open { color: var(--high); }
+.status-false_positive, .status-fixed, .status-accepted_risk { color: var(--low); }
+
+.chain-bar { display: inline-block; height: 6px; border-radius: 3px; background: var(--embargo); vertical-align: middle; }
+
+.muted { color: var(--muted); }
+.row { display: flex; gap: 16px; }
+.col { flex: 1; min-width: 0; }
+.kv { display: grid; grid-template-columns: 140px 1fr; gap: 6px 12px; font-size: 13px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; word-break: break-word; }
+
+.login { max-width: 360px; margin: 12vh auto; }
+.login .card { display: flex; flex-direction: column; gap: 12px; }
+
+.trace { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 12px; white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 12px; }
+.comment { border-top: 1px solid var(--border); padding: 10px 0; }
+.comment .meta { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.error { color: var(--critical); font-size: 13px; }
+.pill { font-size: 11px; background: var(--panel-2); border: 1px solid var(--border); padding: 2px 7px; border-radius: 999px; color: var(--muted); }
+.empty { color: var(--muted); padding: 40px; text-align: center; }
