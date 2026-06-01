@@ -78,10 +78,38 @@ uv run omniscan scan sast --project <proj_id> --repo . --tools demoscan --wait
 uv run omniscan scan sast --project <proj_id> --repo . --tools semgrep --wait
 uv run omniscan scan sast --project <proj_id> --repo . --tools gitleaks --wait
 
+# 3c. SAST on a remote git repo BY URL (engine clones it, scans in a no-network container)
+#     A URL has a network host, so you must allowlist it (--scope-allow) or register
+#     the repo as an owned target — scope_guard rejects unauthorized hosts.
+uv run omniscan scan sast --project <proj_id> \
+  --url https://github.com/your-org/your-repo --ref main \
+  --scope-allow github.com --tools semgrep,gitleaks,trivy --wait
+
 # 4. read + triage + report
 uv run omniscan findings list --scan <scan_id> --min-severity medium
 uv run omniscan findings triage <finding_id> --status false_positive --reason "test fixture"
 uv run omniscan report <scan_id> --format sarif
+```
+
+### Scanning a git repo by URL
+
+The engine clones the repo **host-side** (`git clone --depth 1`, optional `--ref`), then
+the adapters scan the checkout in isolated, no-network containers.
+
+- **CLI:** `--url <repo>` (with optional `--ref <branch/tag>` and `--scope-allow <host>`).
+- **API:** `source: {"type": "git", "url": "...", "ref": "..."}` plus `scope: {"allow": ["github.com"]}`.
+- **Authorization:** a URL introduces a network host, so a **scope allowlist covering that host
+  is required** (or register the repo as an owned target). This is the "authorized assets only"
+  guardrail — OmniScan will not clone + scan arbitrary third-party repos silently.
+- **Private repos:** pass credentials by secret reference (`auth.ref`), never inline. (Authenticated
+  clone is not yet wired into the clone step — public repos / host git credentials work today.)
+- **Local path** still works too: `--repo /path/to/checkout` (no host, no allowlist needed).
+
+```bash
+# example: clone + scan a public repo with three SAST/SCA tools
+uv run omniscan scan sast --project <proj_id> \
+  --url https://github.com/shivik/k8s-cli-orchestrator --ref main \
+  --scope-allow github.com --tools semgrep,gitleaks,trivy --wait
 ```
 
 ---
@@ -92,12 +120,18 @@ uv run omniscan report <scan_id> --format sarif
 2. Sign in with any email and a role: **viewer** (read + comment), **scanner** (+ create
    scans), **triager** (+ change state), **admin** (+ PoC access). Dev issues a token via
    `POST /auth/token`.
-3. **Findings** — unified view across all scan classes, filters, search.
-4. **Residual Risk ✦** — the flagship RVD view: candidate residual / compositional
+3. **Security Dashboard** (home) — overview with engine (SAST/DAST/IAST/RVD) + trend-window
+   filters, Applications/Projects/Scans KPI cards, a findings-by-severity donut, remediation
+   analysis, a findings-over-time trend chart, and Top-10 Applications/Projects risk tables.
+4. **Findings** — unified view across all scan classes, filters, search.
+5. **Residual Risk ✦** — the flagship RVD view: candidate residual / compositional
    weaknesses tiered known-known → known-unknown → **unknown-unknown**, with reasoning
    traces and chainability. Embargoed + unverified until a human reproduces them.
-5. **Scans → New scan** — wizard that issues the same `POST /scans` the CLI/CI use.
-6. Open any finding for triage, assignment, status history, and threaded comments.
+6. **Inventory** — **Applications** (group projects), **Projects**, **Scans**.
+7. **Scans → New scan** — wizard that issues the same `POST /scans` the CLI/CI use.
+8. Open any finding for triage, assignment, status history, and threaded comments.
+9. **Theme** (bottom of the sidebar): **Auto** follows time of day (light from sunrise→sunset,
+   dark at night); **Light** / **Dark** are explicit overrides, remembered per browser.
 
 ---
 
@@ -182,6 +216,46 @@ docker run -d --rm --name omni-pg -e POSTGRES_PASSWORD=omni -e POSTGRES_DB=omnis
 export OMNISCAN_DATABASE_URL="postgresql+asyncpg://postgres:omni@localhost:5432/omniscan"
 make migrate
 ```
+
+## Production backends (queue / object store / secrets)
+
+These are opt-in and need the `prod` extra (`uv sync --extra prod`). Bring up the
+backing services with `make infra` (Postgres + Redis + MinIO + Vault), then:
+
+```bash
+# Redis-backed job queue + dedicated workers
+export OMNISCAN_JOB_BACKEND=arq OMNISCAN_REDIS_URL=redis://localhost:6379/0
+make api        # API enqueues scans to Redis
+make worker     # arq worker(s) pull + execute  (run one or more, separate terminals)
+
+# S3/MinIO object store for raw output + reports
+export OMNISCAN_OBJECT_STORE_URL=s3://omniscan OMNISCAN_S3_ENDPOINT=http://localhost:9000
+export AWS_ACCESS_KEY_ID=minio AWS_SECRET_ACCESS_KEY=minio123 AWS_REGION=us-east-1
+
+# HashiCorp Vault for secret refs (vault://mount/path#key)
+export OMNISCAN_SECRETS_BACKEND=vault VAULT_ADDR=http://localhost:8200 VAULT_TOKEN=dev-root
+```
+
+See `deploy/docker-compose.prod.yml`. The default dev stack (SQLite + in-process worker
++ file object store + env secrets) needs none of this.
+
+## Webhooks
+
+```bash
+# outbound: get HMAC-signed POSTs on scan.completed
+curl -X POST localhost:8000/api/v1/webhooks -H "Authorization: Bearer dev-admin-token" \
+  -H "Content-Type: application/json" \
+  -d '{"direction":"outbound","project_id":"<proj_id>","target_url":"https://ci.example/hook","events":["scan.completed"]}'
+# response includes signing_secret ONCE — verify X-OmniScan-Signature: sha256=<hmac> on your receiver.
+
+# inbound: trigger a scan on push (signature-verified, no bearer token)
+curl -X POST localhost:8000/api/v1/webhooks -H "Authorization: Bearer dev-admin-token" \
+  -H "Content-Type: application/json" -d '{"direction":"inbound","project_id":"<proj_id>"}'
+# then your git provider POSTs to /api/v1/webhooks/{id}/inbound with X-OmniScan-Signature.
+```
+
+The inbound trigger scans the project's registered git target; outbound delivery is
+best-effort and never blocks a scan.
 
 ## The flagship RVD engine
 

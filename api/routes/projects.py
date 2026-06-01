@@ -5,6 +5,8 @@ from fastapi import APIRouter, Depends
 from api.deps import PrincipalDep, SessionDep, requires
 from api.errors import Problem
 from api.schemas.models import (
+    ApplicationCreate,
+    ApplicationOut,
     ProjectCreate,
     ProjectOut,
     TargetCreate,
@@ -16,9 +18,27 @@ from core.enums import Role
 router = APIRouter(prefix="/api/v1", tags=["projects"])
 
 
+@router.post(
+    "/applications", response_model=ApplicationOut, dependencies=[Depends(requires(Role.scanner))]
+)
+async def create_application(body: ApplicationCreate, session: SessionDep) -> ApplicationOut:
+    app = await projects.create_application(session, name=body.name, slug=body.slug)
+    return ApplicationOut.model_validate(app, from_attributes=True)
+
+
+@router.get("/applications", response_model=list[ApplicationOut])
+async def list_applications(session: SessionDep, _: PrincipalDep) -> list[ApplicationOut]:
+    return [
+        ApplicationOut.model_validate(a, from_attributes=True)
+        for a in await projects.list_applications(session)
+    ]
+
+
 @router.post("/projects", response_model=ProjectOut, dependencies=[Depends(requires(Role.scanner))])
 async def create_project(body: ProjectCreate, session: SessionDep) -> ProjectOut:
-    project = await projects.create_project(session, name=body.name, slug=body.slug)
+    project = await projects.create_project(
+        session, name=body.name, slug=body.slug, application_id=body.application_id
+    )
     return ProjectOut.model_validate(project, from_attributes=True)
 
 

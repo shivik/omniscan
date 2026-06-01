@@ -28,8 +28,10 @@ log = logging.getLogger("omniscan.scheduler")
 
 
 def enqueue_scan(scan_id: str) -> None:
-    """Schedule execution. In-process backend uses an asyncio task."""
-    asyncio.create_task(execute_scan(scan_id))
+    """Schedule execution via the configured job backend (in-process or arq/Redis)."""
+    from workers.queue import enqueue_scan as _enqueue
+
+    _enqueue(scan_id)
 
 
 async def execute_scan(scan_id: str) -> None:
@@ -107,6 +109,17 @@ async def _run(scan_id: str) -> None:
         assert scan is not None
         lifecycle.assert_scan_transition(ScanStatus(scan.status), ScanStatus.completed)
         scan.status = ScanStatus.completed
+
+    # Notify subscribed outbound webhooks (best-effort; never blocks the scan).
+    async with session_scope() as s:
+        scan = await s.get(Scan, scan_id)
+        if scan is not None:
+            from api.services import webhooks
+
+            try:
+                await webhooks.notify_scan_completed(s, scan)
+            except Exception:  # noqa: BLE001
+                log.warning("webhook notification failed for scan %s", scan_id)
 
 
 async def _run_job(

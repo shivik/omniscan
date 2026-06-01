@@ -30,18 +30,32 @@ class TokenResponse(BaseModel):
     role: Role
 
 
-# --- projects & targets ---
+# --- applications, projects & targets ---
+
+
+class ApplicationCreate(BaseModel):
+    name: str
+    slug: str
+
+
+class ApplicationOut(BaseModel):
+    id: str
+    name: str
+    slug: str
+    created_at: datetime
 
 
 class ProjectCreate(BaseModel):
     name: str
     slug: str
+    application_id: str | None = None
 
 
 class ProjectOut(BaseModel):
     id: str
     name: str
     slug: str
+    application_id: str | None = None
     created_at: datetime
 
 
@@ -161,6 +175,31 @@ class IastEvent(BaseModel):
 
 class IastEventBatch(BaseModel):
     events: list[IastEvent] = Field(default_factory=list)
+
+
+# --- webhooks ---
+
+
+class WebhookCreate(BaseModel):
+    direction: str = Field(default="outbound", description="'outbound' | 'inbound'")
+    project_id: str | None = None
+    target_url: str | None = None  # required for outbound
+    events: list[str] = Field(default_factory=lambda: ["scan.completed"])
+
+
+class WebhookOut(BaseModel):
+    id: str
+    direction: str
+    project_id: str | None = None
+    target_url: str | None = None
+    events: list[str]
+    active: bool
+    created_at: datetime
+
+
+class WebhookCreated(WebhookOut):
+    # The HMAC signing secret is returned ONCE at creation and never again.
+    signing_secret: str
 
 
 class JobOut(BaseModel):

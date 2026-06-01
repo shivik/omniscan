@@ -27,6 +27,16 @@ dev = [
     "ruff>=0.7",
     "mypy>=1.13",
 ]
+# Production backends (opt-in). Imported lazily, so the default install stays light and
+# only needs these when you actually select the backend:
+#   arq    -> Redis-backed job queue + workers   (OMNISCAN_JOB_BACKEND=arq)
+#   boto3  -> S3/MinIO object store               (OMNISCAN_OBJECT_STORE_URL=s3://...)
+#   hvac   -> HashiCorp Vault secrets             (OMNISCAN_SECRETS_BACKEND=vault)
+prod = [
+    "arq>=0.26",
+    "boto3>=1.35",
+    "hvac>=2.3",
+]
 # Note: the RVD "ollama" backend needs no Python dependency — it talks to a local
 # Ollama server over plain HTTP (httpx, already a core dep). 100% open source, no key.
 

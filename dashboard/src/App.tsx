@@ -1,13 +1,16 @@
 import { useState } from "react";
 import { NavLink, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { clearSession, getRole, getToken } from "./api/client";
+import { ThemeSwitcher } from "./theme";
 import { Login } from "./features/auth/Login";
+import { Overview } from "./features/overview/Overview";
 import { FindingsList } from "./features/vulns/FindingsList";
 import { FindingDetail } from "./features/vulns/FindingDetail";
 import { ResidualRisk } from "./features/residual/ResidualRisk";
 import { ScansList } from "./features/scans/ScansList";
 import { NewScan } from "./features/scans/NewScan";
 import { Projects } from "./features/projects/Projects";
+import { Applications } from "./features/projects/Applications";
 
 export function App() {
   const [token, setToken] = useState<string | null>(getToken());
@@ -19,12 +22,14 @@ export function App() {
       <Sidebar onLogout={() => setToken(null)} />
       <div className="main">
         <Routes>
-          <Route path="/" element={<Navigate to="/findings" replace />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<Overview />} />
           <Route path="/findings" element={<FindingsList />} />
           <Route path="/findings/:id" element={<FindingDetail />} />
           <Route path="/residual" element={<ResidualRisk />} />
           <Route path="/scans" element={<ScansList />} />
           <Route path="/scans/new" element={<NewScan />} />
+          <Route path="/applications" element={<Applications />} />
           <Route path="/projects" element={<Projects />} />
           <Route path="*" element={<div className="empty">Not found</div>} />
         </Routes>
@@ -45,19 +50,33 @@ function Sidebar({ onLogout }: { onLogout: () => void }) {
     <nav className="sidebar">
       <h1>OmniScan</h1>
       <span className="brand-rvd">SAST · DAST · IAST · RVD</span>
-      <NavLink to="/findings" className="nav-link">
-        Findings
+
+      <div className="nav-section">Dashboards</div>
+      <NavLink to="/dashboard" className="nav-link">
+        Security Dashboard
       </NavLink>
       <NavLink to="/residual" className="nav-link" style={{ color: "var(--embargo)" }}>
         Residual Risk ✦
       </NavLink>
-      <NavLink to="/scans" className="nav-link">
-        Scans
+
+      <div className="nav-section">Findings</div>
+      <NavLink to="/findings" className="nav-link">
+        All Findings
+      </NavLink>
+
+      <div className="nav-section">Inventory</div>
+      <NavLink to="/applications" className="nav-link">
+        Applications
       </NavLink>
       <NavLink to="/projects" className="nav-link">
         Projects
       </NavLink>
+      <NavLink to="/scans" className="nav-link">
+        Scans
+      </NavLink>
+
       <div className="spacer" />
+      <ThemeSwitcher />
       <div className="session">
         role: <strong>{role}</strong>
         <br />

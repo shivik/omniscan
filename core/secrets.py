@@ -38,6 +38,45 @@ class EnvSecretsBackend(SecretsBackend):
         return val
 
 
+class VaultSecretsBackend(SecretsBackend):
+    """HashiCorp Vault (KV v2). Ref form: ``vault://<mount>/<path>#<key>``.
+
+    ``hvac`` is imported lazily and only required when this backend is selected.
+    Reads ``VAULT_ADDR`` + ``VAULT_TOKEN`` from the environment. The resolved plaintext
+    is injected into the adapter container only — never logged or persisted.
+    """
+
+    def __init__(self) -> None:
+        try:
+            import hvac  # noqa: PLC0415  (optional prod dependency)
+        except ImportError as exc:  # pragma: no cover - depends on env
+            raise RuntimeError(
+                "Vault backend requires hvac (pip install 'omniscan[prod]')"
+            ) from exc
+        addr = os.environ.get("VAULT_ADDR")
+        token = os.environ.get("VAULT_TOKEN")
+        if not addr or not token:
+            raise RuntimeError("Vault backend requires VAULT_ADDR and VAULT_TOKEN")
+        self._client = hvac.Client(url=addr, token=token)
+
+    def resolve(self, ref: str) -> str:
+        _, _, rest = ref.partition("://")
+        path, _, key = rest.partition("#")
+        if not path or not key:
+            raise SecretNotFound(ref)
+        mount, _, secret_path = path.partition("/")
+        try:
+            resp = self._client.secrets.kv.v2.read_secret_version(
+                mount_point=mount, path=secret_path
+            )
+            value = resp["data"]["data"].get(key)
+        except Exception as exc:  # noqa: BLE001
+            raise SecretNotFound(ref) from exc
+        if value is None:
+            raise SecretNotFound(ref)
+        return str(value)
+
+
 class SecretNotFound(KeyError):
     def __init__(self, ref: str) -> None:
         # Never echo the ref's full path in a way that could leak structure broadly,
@@ -45,7 +84,10 @@ class SecretNotFound(KeyError):
         super().__init__(f"secret reference could not be resolved: {ref}")
 
 
-_BACKENDS: dict[str, type[SecretsBackend]] = {"env": EnvSecretsBackend}
+_BACKENDS: dict[str, type[SecretsBackend]] = {
+    "env": EnvSecretsBackend,
+    "vault": VaultSecretsBackend,
+}
 
 
 def get_secrets_backend() -> SecretsBackend:

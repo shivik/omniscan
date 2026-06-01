@@ -12,11 +12,60 @@ export type TriageStatus =
   | "embargoed";
 export type Role = "viewer" | "scanner" | "triager" | "admin";
 
-export interface Project {
+export interface Application {
   id: string;
   name: string;
   slug: string;
   created_at: string;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  slug: string;
+  application_id: string | null;
+  created_at: string;
+}
+
+export interface SeverityCounts {
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+  info: number;
+}
+
+export interface TopApplication extends SeverityCounts {
+  id: string;
+  name: string;
+  projects: number;
+  total: number;
+}
+
+export interface TopProject extends SeverityCounts {
+  id: string;
+  name: string;
+  application: string | null;
+  total: number;
+}
+
+export interface TrendPoint {
+  date: string;
+  open: number;
+  resolved: number;
+}
+
+export interface DashboardData {
+  trend_days: number;
+  engines: string[];
+  overview: { applications: number; projects: number; scans: number };
+  findings_by_severity: SeverityCounts;
+  findings_by_engine: Record<string, SeverityCounts>;
+  remediation: { remediations: number; suppressions: number };
+  trends: TrendPoint[];
+  top_applications: TopApplication[];
+  top_projects: TopProject[];
+  total_findings: number;
 }
 
 export interface Job {

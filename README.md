@@ -27,14 +27,18 @@ Implemented:
 - **engine/** — planner (scope-first), workspace prep, lifecycle state machine, scheduler
 - **adapters/** — `ScannerAdapter` ABC, sandbox runners, registry. SAST: `demoscan`
   (zero-infra), **`semgrep`**, **`bandit`**, **`gitleaks`**, **`codeql`**; SCA: **`trivy`**
-  (source manifests) + **`clair`** (container images). DAST: **`nuclei`**, **`zap`**. Plus
-  the **RVD** engine — pluggable open-source backends (`ollama` local LLM → `heuristic`),
-  residual-risk tiering, chainability, embargo
+  (source manifests) + **`clair`** (container images). DAST: **`nuclei`**, **`zap`**,
+  **`vigolium`** (high-fidelity, AGPL). Plus the **RVD** engine — pluggable open-source
+  backends (`ollama` local LLM → `heuristic`), residual-risk tiering, chainability, embargo
 - **omniscan_iast/** — a real **Python IAST runtime agent**: instruments dangerous sinks in
   a running app and reports tainted source→sink flows to the collector (`/iast/sessions/{id}/events`)
 - **migrations/** — Alembic (async); SQLite for dev, **PostgreSQL** (asyncpg) for prod
-- **dashboard/Residual Risk** — flagship view tiering RVD findings into known-known /
-  known-unknown / **unknown-unknown**, with reasoning trace, composition path, and confidence
+- **dashboard/** — Mend-style **Security Dashboard** (overview): engine/trend filters,
+  Applications/Projects/Scans KPI cards, a findings-by-severity donut, remediation analysis,
+  a findings-over-time trend (Recharts), and Top-10 Applications/Projects risk tables. Plus
+  the **Residual Risk** view (RVD known-known → unknown-unknown), an **Applications** layer
+  above Projects, and **time-of-day theming** (auto light/dark by sunrise→sunset, with an
+  Auto/Light/Dark user override)
 - **normalize/** — SARIF 2.1.0 model, severity mapping, SARIF→Finding, fingerprint + dedup
 - **api/** — FastAPI: auth, projects, targets, scans, findings, triage, comments, reports, CI gate
 - **cli/** — Typer thin client
@@ -72,16 +76,27 @@ structured-output JSON over plain HTTP) on your authorized code. Quality is boun
 local model you run — findings are embargoed, unverified, and confidence-scored for human
 triage. With no local model server it degrades gracefully to the heuristic backend.
 
+**Production backends + integrations** are wired as pluggable, opt-in modules (lazy deps
+in the `prod` extra, default install stays light):
+- **Job queue** — `OMNISCAN_JOB_BACKEND=arq` runs scans via Redis + dedicated **arq workers**
+  (`make worker`); `inprocess` is the dev default. Same idempotent execution body either way.
+- **Object store** — `OMNISCAN_OBJECT_STORE_URL=s3://…` uses **S3/MinIO** (boto3); `file://` for dev.
+- **Secrets** — `OMNISCAN_SECRETS_BACKEND=vault` resolves `vault://mount/path#key` from **HashiCorp
+  Vault** (hvac); `env` for dev.
+- **Webhooks** — `POST /webhooks` registers **outbound** (HMAC-signed `scan.completed`
+  notifications) or **inbound** (signature-verified push → triggers a scan) hooks.
+- `deploy/docker-compose.prod.yml` brings up Postgres + Redis + MinIO + Vault; `make infra`.
+
 Honest status — still **not** the complete platform. Not yet built: IAST agents for
-non-Python runtimes, arq/Redis workers, MinIO/S3, Vault, webhooks/schedules, and a true
-sandboxed-PoC path. `make check` (ruff + mypy --strict + tests) is green.
+non-Python runtimes, scheduled/cron scans, a real sandboxed-PoC path, and a production
+IdP/OIDC. `make check` (ruff + mypy --strict + tests) is green.
 
 > **Live-verified vs fixture-verified:** `demoscan`, `semgrep`, `bandit`, `gitleaks`,
 > `nuclei`, the Python IAST agent, and Postgres/Alembic are exercised live (real containers /
 > real Postgres). `trivy` runs live where its advisory DB is reachable (skips on disk/network
-> limits). `codeql`, `zap`, and `clair` are contract-tested against fixtures — their stacks are
-> huge/multi-service, so the live run isn't executed in the test suite. Each ships a vendored
-> Dockerfile / compose (`deploy/scanners/<tool>/`) to run for real.
+> limits). `codeql`, `zap`, `clair`, and `vigolium` are contract-tested against fixtures —
+> their stacks are huge/multi-service, so the live run isn't executed in the test suite. Each
+> ships a vendored Dockerfile / compose (`deploy/scanners/<tool>/`) to run for real.
 
 ## Quickstart
 
@@ -112,6 +127,11 @@ uv run omniscan scan sast --project <proj_id> --repo . --tools demoscan --wait
 
 # real containerized scanners (need Docker)
 uv run omniscan scan sast --project <proj_id> --repo . --tools semgrep,gitleaks --wait
+
+# scan a remote git repo BY URL (engine clones it; allowlist the host)
+uv run omniscan scan sast --project <proj_id> \
+  --url https://github.com/your-org/your-repo --ref main \
+  --scope-allow github.com --tools semgrep,gitleaks,trivy --wait
 
 # flagship RVD pass (heuristic fallback; run Ollama + `--backend ollama` for the real open-source engine)
 uv run omniscan scan rvd --project <proj_id> --repo . --focus isolation,deserialization --wait
