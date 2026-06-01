@@ -2,7 +2,9 @@
 // scan/triage logic in the UI, only calls to the REST API (the source of truth).
 
 import type {
+  Application,
   Comment,
+  DashboardData,
   Finding,
   FindingFilters,
   HistoryEvent,
@@ -83,8 +85,20 @@ export const api = {
 
   // --- projects ---
   listProjects: () => request<Project[]>("GET", "/projects"),
-  createProject: (name: string, slug: string) =>
-    request<Project>("POST", "/projects", { name, slug }),
+  createProject: (name: string, slug: string, applicationId?: string | null) =>
+    request<Project>("POST", "/projects", { name, slug, application_id: applicationId ?? null }),
+
+  // --- applications ---
+  listApplications: () => request<Application[]>("GET", "/applications"),
+  createApplication: (name: string, slug: string) =>
+    request<Application>("POST", "/applications", { name, slug }),
+
+  // --- dashboard ---
+  dashboard: (trend: number, engines: string[]) =>
+    request<DashboardData>(
+      "GET",
+      `/dashboard${qs({ trend, engines: engines.length ? engines.join(",") : undefined })}`,
+    ),
 
   // --- scans ---
   listScans: (projectId?: string) =>

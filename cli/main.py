@@ -74,16 +74,29 @@ def _create_scan(payload: dict[str, Any], wait: bool) -> None:
 @scan_app.command("sast")
 def scan_sast(
     project: str = typer.Option(..., "--project", help="project id"),
-    repo: str = typer.Option(".", "--repo", help="local repo path"),
+    repo: str = typer.Option("", "--repo", help="local repo path (or use --url)"),
+    url: str = typer.Option("", "--url", help="git repo URL to clone + scan"),
+    ref: str = typer.Option("", "--ref", help="git ref/branch/tag (with --url)"),
+    scope_allow: str = typer.Option(
+        "", "--scope-allow", help="host allowlist for --url (e.g. github.com)"
+    ),
     tools: str = typer.Option("", "--tools", help="comma-separated adapters"),
     wait: bool = typer.Option(False, "--wait"),
 ) -> None:
-    payload = {
+    if url:
+        source: dict[str, Any] = {"type": "git", "url": url}
+        if ref:
+            source["ref"] = ref
+    else:
+        source = {"type": "path", "path": os.path.abspath(repo or ".")}
+    payload: dict[str, Any] = {
         "scan_class": "SAST",
         "project_id": project,
-        "source": {"type": "path", "path": os.path.abspath(repo)},
+        "source": source,
         "tools": [t for t in tools.split(",") if t] or None,
     }
+    if scope_allow.strip():
+        payload["scope"] = {"allow": [h.strip() for h in scope_allow.split(",") if h.strip()]}
     _create_scan(payload, wait)
 
 

@@ -1,4 +1,4 @@
-.PHONY: setup run bootstrap dev api dashboard worker cli migrate fmt lint test test-adapters check
+.PHONY: setup run bootstrap dev api dashboard worker infra cli migrate fmt lint test test-adapters check
 
 # One-command install & setup (Python + dashboard + scanner images).
 setup:
@@ -20,7 +20,11 @@ dashboard:
 dev: run
 
 worker:
-	@echo "dev uses the in-process job backend (no separate worker). Prod: arq worker."
+	uv run arq workers.arq_worker.WorkerSettings
+
+# Bring up prod-shaped backing services (Postgres, Redis, MinIO, Vault).
+infra:
+	docker compose -f deploy/docker-compose.prod.yml up -d
 
 cli:
 	uv run omniscan $(ARGS)

@@ -7,14 +7,31 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.models import Project, Target
+from core.models import Application, Project, Target
 
 
-async def create_project(session: AsyncSession, *, name: str, slug: str) -> Project:
+async def create_application(session: AsyncSession, *, name: str, slug: str) -> Application:
+    if await session.scalar(select(Application).where(Application.slug == slug)):
+        raise ValueError(f"application slug already exists: {slug}")
+    app = Application(name=name, slug=slug)
+    session.add(app)
+    await session.flush()
+    return app
+
+
+async def list_applications(session: AsyncSession) -> list[Application]:
+    return list(await session.scalars(select(Application).order_by(Application.created_at.desc())))
+
+
+async def create_project(
+    session: AsyncSession, *, name: str, slug: str, application_id: str | None = None
+) -> Project:
     existing = await session.scalar(select(Project).where(Project.slug == slug))
     if existing:
         raise ValueError(f"project slug already exists: {slug}")
-    project = Project(name=name, slug=slug)
+    if application_id and await session.get(Application, application_id) is None:
+        raise ValueError(f"unknown application: {application_id}")
+    project = Project(name=name, slug=slug, application_id=application_id)
     session.add(project)
     await session.flush()
     return project

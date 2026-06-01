@@ -1,0 +1,3 @@
+{"module":"sqli.error-based","severity":"Critical","confidence":"Firm","url":"https://staging.acme.test/item?id=1","parameter":"id","evidence":"SQL error: near token; leaked ghp_should0123456789abcdefghijkl","description":"Error-based SQL injection in the id parameter."}
+{"module":"xss.reflected","severity":"High","confidence":"Tentative","url":"https://staging.acme.test/search?q=test","parameter":"q","evidence":"reflected <script> marker","description":"Reflected cross-site scripting in the q parameter."}
+{"module":"headers.missing-csp","severity":"Low","confidence":"Certain","url":"https://staging.acme.test/","parameter":"","evidence":"no Content-Security-Policy header","description":"Missing Content-Security-Policy header."}

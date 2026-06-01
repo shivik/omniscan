@@ -12,7 +12,17 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from api.errors import register_exception_handlers
-from api.routes import auth, findings, health, iast, projects, reports, scans
+from api.routes import (
+    auth,
+    dashboard,
+    findings,
+    health,
+    iast,
+    projects,
+    reports,
+    scans,
+    webhooks,
+)
 from core.db import init_db
 from core.security import bootstrap
 
@@ -45,5 +55,7 @@ for r in (
     findings.router,
     reports.router,
     iast.router,
+    dashboard.router,
+    webhooks.router,
 ):
     app.include_router(r)

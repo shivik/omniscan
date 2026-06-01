@@ -42,14 +42,35 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 
+class Application(Base):
+    """An application groups one or more Projects (the top level of the hierarchy).
+
+    Mirrors Mend's Application → Projects model: dashboards roll findings up to the
+    application a project belongs to.
+    """
+
+    __tablename__ = "applications"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: new_id("app"))
+    name: Mapped[str] = mapped_column(String, index=True)
+    slug: Mapped[str] = mapped_column(String, unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+    projects: Mapped[list[Project]] = relationship(back_populates="application")
+
+
 class Project(Base):
     __tablename__ = "projects"
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: new_id("proj"))
     name: Mapped[str] = mapped_column(String, index=True)
     slug: Mapped[str] = mapped_column(String, unique=True, index=True)
+    application_id: Mapped[str | None] = mapped_column(
+        ForeignKey("applications.id"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
+    application: Mapped[Application | None] = relationship(back_populates="projects")
     targets: Mapped[list[Target]] = relationship(back_populates="project")
 
 
@@ -206,6 +227,32 @@ class IastSession(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     finalized_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class Webhook(Base):
+    """A webhook integration.
+
+    ``direction="outbound"``: OmniScan POSTs a signed payload to ``target_url`` on
+    subscribed events (e.g. ``scan.completed``).
+    ``direction="inbound"``: an external system (CI / git provider) POSTs to
+    ``/webhooks/{id}/inbound`` with an HMAC signature to trigger a scan.
+
+    The signing secret is OmniScan-owned (used for HMAC), returned once at creation and
+    never serialized again; it is excluded from all API responses.
+    """
+
+    __tablename__ = "webhooks"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: new_id("wh"))
+    project_id: Mapped[str | None] = mapped_column(
+        ForeignKey("projects.id"), nullable=True, index=True
+    )
+    direction: Mapped[str] = mapped_column(String, default="outbound")  # outbound | inbound
+    target_url: Mapped[str | None] = mapped_column(String, nullable=True)  # outbound only
+    signing_secret: Mapped[str] = mapped_column(String)  # HMAC secret (never serialized)
+    events: Mapped[list[str]] = mapped_column(JSON, default=list)  # e.g. ["scan.completed"]
+    active: Mapped[bool] = mapped_column(default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 
 class AuditLog(Base):

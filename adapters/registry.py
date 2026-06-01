@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from adapters.base import ScannerAdapter
 from adapters.dast.nuclei.adapter import NucleiAdapter
+from adapters.dast.vigolium.adapter import VigoliumAdapter
 from adapters.dast.zap.adapter import ZapAdapter
 from adapters.rvd.engine import RVDAdapter
 from adapters.sast.bandit.adapter import BanditAdapter
@@ -65,4 +66,5 @@ register(ClairAdapter())  # SCA (container images)
 register(CodeQLAdapter())  # SAST (deep dataflow)
 register(NucleiAdapter())  # DAST
 register(ZapAdapter())  # DAST
+register(VigoliumAdapter())  # DAST (high-fidelity, AGPL)
 register(RVDAdapter())

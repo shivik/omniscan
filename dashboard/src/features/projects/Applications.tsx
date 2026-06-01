@@ -2,20 +2,20 @@ import { useEffect, useState } from "react";
 import { api } from "../../api/client";
 import type { Application, Project } from "../../api/types";
 
-export function Projects() {
-  const [projects, setProjects] = useState<Project[]>([]);
+// Applications group projects (the top of the hierarchy, mirroring Mend).
+export function Applications() {
   const [apps, setApps] = useState<Application[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
-  const [appId, setAppId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function load() {
     try {
-      const [p, a] = await Promise.all([api.listProjects(), api.listApplications()]);
-      setProjects(p);
+      const [a, p] = await Promise.all([api.listApplications(), api.listProjects()]);
       setApps(a);
+      setProjects(p);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "failed to load");
@@ -31,10 +31,9 @@ export function Projects() {
     setBusy(true);
     setError(null);
     try {
-      await api.createProject(name, slug, appId || null);
+      await api.createApplication(name, slug);
       setName("");
       setSlug("");
-      setAppId("");
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "failed to create");
@@ -43,37 +42,29 @@ export function Projects() {
     }
   }
 
-  const appName = (id: string | null) => apps.find((a) => a.id === id)?.name ?? "—";
+  const countFor = (appId: string) => projects.filter((p) => p.application_id === appId).length;
 
   return (
     <div>
-      <h2>Projects</h2>
-      <p className="page-sub">Repos and running targets, optionally grouped under an application.</p>
+      <h2>Applications</h2>
+      <p className="page-sub">Group projects into applications for rolled-up risk.</p>
       <div className="card">
         <div className="toolbar">
-          <input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+          <input placeholder="Application name" value={name} onChange={(e) => setName(e.target.value)} />
           <input
             placeholder="slug"
             value={slug}
             onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
           />
-          <select value={appId} onChange={(e) => setAppId(e.target.value)}>
-            <option value="">(no application)</option>
-            {apps.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
-          </select>
           <button onClick={create} disabled={busy || !name || !slug}>
-            Create project
+            Create application
           </button>
         </div>
         {error && <div className="error">{error}</div>}
       </div>
 
-      {projects.length === 0 ? (
-        <div className="empty">No projects yet.</div>
+      {apps.length === 0 ? (
+        <div className="empty">No applications yet. Create one, then assign projects to it.</div>
       ) : (
         <div className="card">
           <table>
@@ -81,21 +72,17 @@ export function Projects() {
               <tr>
                 <th>Name</th>
                 <th>Slug</th>
-                <th>Application</th>
+                <th className="num">Projects</th>
                 <th>ID</th>
-                <th>Created</th>
               </tr>
             </thead>
             <tbody>
-              {projects.map((p) => (
-                <tr key={p.id}>
-                  <td>{p.name}</td>
-                  <td className="muted">{p.slug}</td>
-                  <td className="muted">{appName(p.application_id)}</td>
-                  <td>
-                    <code>{p.id}</code>
-                  </td>
-                  <td className="muted">{new Date(p.created_at).toLocaleString()}</td>
+              {apps.map((a) => (
+                <tr key={a.id}>
+                  <td>{a.name}</td>
+                  <td className="muted">{a.slug}</td>
+                  <td className="num">{countFor(a.id)}</td>
+                  <td><code>{a.id}</code></td>
                 </tr>
               ))}
             </tbody>
